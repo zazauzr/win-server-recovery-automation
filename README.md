@@ -4,7 +4,7 @@ An infrastructure automation and incident recovery toolkit designed to remediate
 
 ---
 
-## 📌 Architecture & Overview
+##  Architecture & Overview
 
 During cumulative update installation sequences, Windows Server instances can enter a persistent servicing transaction loop (`TrustedInstaller` / `TiWorker.exe` starvation). This locks core dynamic-link libraries, stalling endpoint communication stacks and preventing incoming remote administration handshakes.
 
@@ -28,7 +28,7 @@ During cumulative update installation sequences, Windows Server instances can en
 
 ---
 
-## 📂 Repository Structure
+## Repository Structure
 
 ```text
 ├── scripts/
@@ -41,7 +41,7 @@ During cumulative update installation sequences, Windows Server instances can en
 
 ---
 
-## 🚀 Execution & Deployment Guide
+##  Execution & Deployment Guide
 
 ### Prerequisites
 * PowerShell 5.1+ running in an elevated security context (`Run as Administrator`).
@@ -93,7 +93,7 @@ Ensure the target physical adapter permits wake events:
 
 ---
 
-## 🔍 Verification & Health Checks
+##  Verification & Health Checks
 
 | Verification Step | Command / Methodology | Expected Output |
 | :--- | :--- | :--- |
