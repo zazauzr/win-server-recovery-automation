@@ -23,17 +23,16 @@ param(
 $ErrorActionPreference = 'Stop'
 
 try {
-    $cleanMac = $MacAddress -replace '[:-]', ''
-    $macBytes = for ($i = 0; $i -lt 12; $i += 2) {
-        [Convert]::ToByte($cleanMac.Substring($i, 2), 16)
+    $macBytes = $MacAddress -split '[:-]' | ForEach-Object {
+        [Convert]::ToByte($_, 16)
     }
 
-    $payload = [byte[]](@([byte]0xFF) * 6) + ($macBytes * 16)
+    $payload = [byte[]](@([byte]0xFF) * 6 + @($macBytes) * 16)
     $udpClient = New-Object System.Net.Sockets.UdpClient
     $destination = [System.Net.IPEndPoint]::new([System.Net.IPAddress]::Parse($BroadcastAddress), $Port)
 
-    $sentBytes = $udpClient.Send($payload, $payload.Length, $destination)
-    Write-Output "Dispatched $sentBytes-byte Magic Packet to target [$MacAddress] via $BroadcastAddress:$Port"
+    [void]$udpClient.Send($payload, $payload.Length, $destination)
+    Write-Output "Dispatched 102-byte Magic Packet to target [$MacAddress] via $BroadcastAddress:$Port"
 } catch {
     Write-Error "Failed to transmit WoL Magic Packet: $($_.Exception.Message)"
 } finally {
