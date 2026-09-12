@@ -4,9 +4,15 @@ An infrastructure automation and incident recovery toolkit designed to remediate
 
 ---
 
-##  Architecture & Overview
+## Architecture & Overview
 
 During cumulative update installation sequences, Windows Server instances can enter a persistent servicing transaction loop (`TrustedInstaller` / `TiWorker.exe` starvation). This locks core dynamic-link libraries, stalling endpoint communication stacks and preventing incoming remote administration handshakes.
+
+Standard online remediation commands like `/revertpendingactions` fail in this state due to engine restrictions:
+
+<p align="center">
+  <img src="assets/dism-online-error50.png" width="75%" alt="DISM Error 50: RevertPendingActions unsupported in online mode" />
+</p>
 
 ```
        [ Upstream Router / MikroTik ]
@@ -31,6 +37,12 @@ During cumulative update installation sequences, Windows Server instances can en
 ## Repository Structure
 
 ```text
+├── assets/
+│   ├── bios-lan-wakeup-setup.png
+│   ├── dism-online-error50.png
+│   ├── dism-restorehealth-pipeline.png
+│   ├── nic-power-management-config.png
+│   └── nic-wol-advanced-properties.png
 ├── scripts/
 │   ├── Reset-WindowsUpdateServicing.ps1  # Transaction deadlock remediation
 │   ├── Send-WOLPacket.ps1               # RFC-compliant PowerShell WoL engine
@@ -41,7 +53,7 @@ During cumulative update installation sequences, Windows Server instances can en
 
 ---
 
-##  Execution & Deployment Guide
+## Execution & Deployment Guide
 
 ### Prerequisites
 * PowerShell 5.1+ running in an elevated security context (`Run as Administrator`).
@@ -64,6 +76,10 @@ DISM.exe /Online /Cleanup-Image /RestoreHealth
 sfc /scannow
 ```
 
+<p align="center">
+  <img src="assets/dism-restorehealth-pipeline.png" width="80%" alt="DISM RestoreHealth and SFC Integrity Pipeline" />
+</p>
+
 ---
 
 ### Step 2: Bare-Metal Power Automation (WoL)
@@ -72,10 +88,19 @@ sfc /scannow
 1. **Power Management:** Set `Lan Wake up Control` (or `Power On By PCI-E`) to `[Enabled]`.
 2. **Energy Regulations:** Set `ErP/EuP Support` to `[Disabled]` to preserve standby power (+5VSB) to the physical Ethernet PHY when the machine is shut down (ACPI S5 state).
 
+<p align="center">
+  <img src="assets/bios-lan-wakeup-setup.png" width="60%" alt="BIOS Aptio Setup: Lan Wake up Control Enabled" />
+</p>
+
 #### Windows Adapter Configuration
 Ensure the target physical adapter permits wake events:
 * **Advanced Properties:** Set `Wake on Magic Packet` to `Enabled`.
 * **Power Management:** Enable both *Allow this device to wake the computer* and *Only allow a magic packet to wake the computer*.
+
+<p align="center">
+  <img src="assets/nic-power-management-config.png" width="45%" alt="NIC Power Management Configuration" />
+  <img src="assets/nic-wol-advanced-properties.png" width="45%" alt="NIC Advanced Driver Configuration" />
+</p>
 
 #### Dispatching Wake Signals
 
@@ -93,7 +118,7 @@ Ensure the target physical adapter permits wake events:
 
 ---
 
-##  Verification & Health Checks
+## Verification & Health Checks
 
 | Verification Step | Command / Methodology | Expected Output |
 | :--- | :--- | :--- |
@@ -107,6 +132,9 @@ Ensure the target physical adapter permits wake events:
 ## Security & Best Practices
 * **Directed Broadcasts:** Avoid unrestricted global broadcast addresses (`255.255.255.255`) where internal routing filters drop non-directed packets; target specific subnet broadcast addresses (e.g., `192.168.1.255`).
 * **Privilege Separation:** Component reset actions must be executed exclusively under authenticated administrative accounts.
+
+---
+
 ## Copyright and License
 
 Copyright (c) 2026 zazauzr. All rights reserved.
