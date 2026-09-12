@@ -33,7 +33,7 @@ try {
     $destination = [System.Net.IPEndPoint]::new([System.Net.IPAddress]::Parse($BroadcastAddress), $Port)
 
     [void]$udpClient.Send($payload, $payload.Length, $destination)
-    Write-Output "Dispatched 102-byte Magic Packet to target [$MacAddress] via $BroadcastAddress:$Port"
+    Write-Output "Dispatched 102-byte Magic Packet to target [$MacAddress] via ${BroadcastAddress}:$Port"
 } catch {
     Write-Error "Failed to transmit WoL Magic Packet: $($_.Exception.Message)"
 } finally {
