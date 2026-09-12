@@ -49,8 +49,10 @@ jobs:
               $null = [System.Management.Automation.Language.Parser]::ParseFile($file.FullName, [ref]$tokens, [ref]$errors)
               
               if ($errors.Count -gt 0) {
-                  Write-Error "Syntax parsing failed for $($file.Name):"
-                  $errors | ForEach-Object { Write-Host "  Line $($_.Extent.StartLineNumber): $($_.Message)" -ForegroundColor Red }
+                  Write-Host "::error file=$($file.Name)::Syntax parsing failed for $($file.Name)"
+                  $errors | ForEach-Object { 
+                      Write-Host "  -> Line $($_.Extent.StartLineNumber): $($_.Message)" -ForegroundColor Red 
+                  }
                   $hasErrors = $true
               } else {
                   Write-Host "Syntax valid: $($file.Name)" -ForegroundColor Green

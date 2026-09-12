@@ -8,7 +8,7 @@
 [CmdletBinding()]
 param(
     [Parameter(Mandatory = $true, Position = 0)]
-    [ValidatePattern('^([0-9A-Fa-f]{2}[:-]){5}([0-9A-Fa-f]{2})$')]
+    [ValidatePattern('^([0-9A-Fa-f]{2}[-:]){5}([0-9A-Fa-f]{2})$')]
     [string]$MacAddress,
 
     [Parameter(Mandatory = $false, Position = 1)]
@@ -23,11 +23,12 @@ param(
 $ErrorActionPreference = 'Stop'
 
 try {
-    $macBytes = $MacAddress -split '[:-]' | ForEach-Object {
-        [Convert]::ToByte($_, 16)
+    $cleanMac = $MacAddress -replace '[-:]', ''
+    $macBytes = for ($i = 0; $i -lt 12; $i += 2) {
+        [Convert]::ToByte($cleanMac.Substring($i, 2), 16)
     }
 
-    $payload = [byte[]](@([byte]0xFF) * 6 + @($macBytes) * 16)
+    $payload = [byte[]](@([byte]0xFF) * 6 + ($macBytes * 16))
     $udpClient = New-Object System.Net.Sockets.UdpClient
     $destination = [System.Net.IPEndPoint]::new([System.Net.IPAddress]::Parse($BroadcastAddress), $Port)
 
