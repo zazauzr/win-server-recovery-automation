@@ -107,3 +107,8 @@ Ensure the target physical adapter permits wake events:
 ## 🛡 Security & Best Practices
 * **Directed Broadcasts:** Avoid unrestricted global broadcast addresses (`255.255.255.255`) where internal routing filters drop non-directed packets; target specific subnet broadcast addresses (e.g., `192.168.1.255`).
 * **Privilege Separation:** Component reset actions must be executed exclusively under authenticated administrative accounts.
+## Copyright and License
+
+Copyright (c) 2026 zazauzr. All rights reserved.
+
+This repository and all its contents (including documentation, scripts, and configuration files) are proprietary. Unauthorized copying, modification, distribution, or commercial use of any materials from this repository, via any medium, is strictly prohibited without the express prior written permission of the copyright holder.
