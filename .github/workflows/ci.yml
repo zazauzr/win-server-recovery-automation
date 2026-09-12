@@ -1,0 +1,71 @@
+name: Scripts Quality & Syntax Verification
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  lint-and-validate:
+    name: PowerShell Linting & Syntax AST Analysis
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Install PSScriptAnalyzer
+        shell: pwsh
+        run: |
+          Set-PSRepository PSGallery -InstallationPolicy Trusted
+          Install-Module PSScriptAnalyzer -Scope CurrentUser -Force -ErrorAction Stop
+
+      - name: Run Static Code Analysis (PSScriptAnalyzer)
+        shell: pwsh
+        run: |
+          $results = Invoke-ScriptAnalyzer -Path ./scripts -Recurse -Severity Error,Warning
+          if ($results) {
+              $results | Format-Table -AutoSize
+              Write-Error "Static analysis failed with issues listed above."
+              exit 1
+          } else {
+              Write-Host "PSScriptAnalyzer passed: No critical issues or syntax violations found." -ForegroundColor Green
+          }
+
+      - name: Validate PowerShell Script Syntax (AST Parsing)
+        shell: pwsh
+        run: |
+          $psFiles = Get-ChildItem -Path ./scripts -Filter *.ps1 -Recurse
+          $hasErrors = $false
+
+          foreach ($file in $psFiles) {
+              $errors = $null
+              $tokens = $null
+              $ast = [System.Management.Automation.Language.Parser]::ParseFile($file.FullName, [ref]$tokens, [ref]$errors)
+              
+              if ($errors.Count -gt 0) {
+                  Write-Error "Syntax parsing failed for $($file.Name):"
+                  $errors | ForEach-Object { Write-Host "  Line $($_.Extent.StartLineNumber): $($_.Message)" -ForegroundColor Red }
+                  $hasErrors = $true
+              } else {
+                  Write-Host "Syntax valid: $($file.Name)" -ForegroundColor Green
+              }
+          }
+
+          if ($hasErrors) {
+              exit 1
+          }
+
+      - name: Basic RouterOS RSC Script Sanity Check
+        shell: bash
+        run: |
+          rsc_file="scripts/mikrotik-wol-trigger.rsc"
+          if [ -f "$rsc_file" ]; then
+            if grep -q "00:1A:2B:3C:4D:5E" "$rsc_file"; then
+              echo "RouterOS script exists and contains target RFC template variables."
+            else
+              echo "RouterOS script validation failed: template format mismatch."
+              exit 1
+            fi
+          fi

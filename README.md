@@ -1,3 +1,5 @@
+[![Scripts Quality  Syntax Verification](https://github.com/zazauzr/win-server-recovery-automation/actions/workflows/ci.yml/badge.svg)](https://github.com/zazauzr/win-server-recovery-automation/actions/workflows/ci.yml)
+
 # Windows Server Component-Store Remediation & Out-of-Band Power Automation
 
 An infrastructure automation and incident recovery toolkit designed to remediate transaction deadlocks in the Windows Component Store (CBS/DISM), resolve service hang conditions impacting remote access agents (RDP, RustDesk, LOB services), and establish out-of-band power recovery mechanisms via Wake-on-LAN (WoL).
