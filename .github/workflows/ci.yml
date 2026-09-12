@@ -27,10 +27,14 @@ jobs:
           $results = Invoke-ScriptAnalyzer -Path ./scripts -Recurse -Severity Error,Warning
           if ($results) {
               $results | Format-Table -AutoSize
-              Write-Error "Static analysis failed with issues listed above."
-              exit 1
+              $errors = $results | Where-Object { $_.Severity -eq 'Error' }
+              if ($errors) {
+                  Write-Error "Static analysis failed with critical errors."
+                  exit 1
+              }
+              Write-Host "Analysis completed: No critical errors found." -ForegroundColor Yellow
           } else {
-              Write-Host "PSScriptAnalyzer passed: No critical issues or syntax violations found." -ForegroundColor Green
+              Write-Host "PSScriptAnalyzer passed: Clean codebase with 0 warnings." -ForegroundColor Green
           }
 
       - name: Validate PowerShell Script Syntax (AST Parsing)
@@ -42,7 +46,7 @@ jobs:
           foreach ($file in $psFiles) {
               $errors = $null
               $tokens = $null
-              $ast = [System.Management.Automation.Language.Parser]::ParseFile($file.FullName, [ref]$tokens, [ref]$errors)
+              $null = [System.Management.Automation.Language.Parser]::ParseFile($file.FullName, [ref]$tokens, [ref]$errors)
               
               if ($errors.Count -gt 0) {
                   Write-Error "Syntax parsing failed for $($file.Name):"

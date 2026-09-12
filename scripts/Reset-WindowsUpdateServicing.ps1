@@ -9,9 +9,9 @@ param()
 $ErrorActionPreference = 'Stop'
 
 function Test-IsElevated {
-    $identity = [Security.Principal.WindowsIdentity]::GetCurrent()
-    $principal = New-Object Security.Principal.WindowsPrincipal($identity)
-    return $principal.IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)
+    return ([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole(
+        [Security.Principal.WindowsBuiltInRole]::Administrator
+    )
 }
 
 if (-not (Test-IsElevated)) {
@@ -20,47 +20,45 @@ if (-not (Test-IsElevated)) {
 }
 
 $services = @('wuauserv', 'bits', 'cryptSvc', 'trustedinstaller')
-$winsxsPath = "$env:SystemRoot\WinSxS"
-$pendingFile = Join-Path$winsxsPath "pending.xml"
+$pendingFile = "$env:SystemRoot\WinSxS\pending.xml"
 $distributionPath = "$env:SystemRoot\SoftwareDistribution"
 
-Write-Host "[1/4] Stopping target services..." -ForegroundColor Cyan
-foreach ($svc in$services) {
+Write-Output "[1/4] Stopping target services..."
+foreach ($svc in $services) {
     if ((Get-Service -Name $svc -ErrorAction SilentlyContinue).Status -eq 'Running') {
         Stop-Service -Name $svc -Force -Verbose
     }
 }
 
-Write-Host "[2/4] Resolving CBS servicing locks..." -ForegroundColor Cyan
+Write-Output "[2/4] Resolving CBS servicing locks..."
 if (Test-Path -Path $pendingFile) {
     try {
         & takeown /f $pendingFile /a | Out-Null
         & icacls $pendingFile /grant "Administrators:F" | Out-Null
-        $backupPath = "$pendingFile.bak.$(Get-Date -Format 'yyyyMMddHHmmss')"
-        Move-Item -Path $pendingFile -Destination$backupPath -Force
-        Write-Host "Stuck pending.xml archived to: $backupPath" -ForegroundColor Green
+        Move-Item -Path $pendingFile -Destination "$pendingFile.bak" -Force
+        Write-Output "Stuck pending.xml successfully archived."
     } catch {
         Write-Warning "Could not rotate pending.xml. System might still be holding handles."
     }
 } else {
-    Write-Host "No pending.xml locks detected." -ForegroundColor Yellow
+    Write-Output "No pending.xml locks detected."
 }
 
-Write-Host "[3/4] Purging corrupted software distribution caches..." -ForegroundColor Cyan
-if (Test-Path -Path $distributionPath) {$archivedDist = "$distributionPath.old.$(Get-Date -Format 'yyyyMMddHHmmss')"
+Write-Output "[3/4] Purging corrupted software distribution caches..."
+if (Test-Path -Path $distributionPath) {
     try {
-        Move-Item -Path $distributionPath -Destination$archivedDist -Force
-        Write-Host "Cache moved to $archivedDist" -ForegroundColor Green
+        Move-Item -Path $distributionPath -Destination "$distributionPath.old" -Force
+        Write-Output "SoftwareDistribution cache successfully archived."
     } catch {
         Write-Warning "SoftwareDistribution folder is locked by another process. Skipping rename."
     }
 }
 
-Write-Host "[4/4] Triggering component cleanup and restarting services..." -ForegroundColor Cyan
+Write-Output "[4/4] Triggering component cleanup and restarting services..."
 Start-Process -FilePath "dism.exe" -ArgumentList "/online /cleanup-image /startcomponentcleanup" -Wait -NoNewWindow
 
 foreach ($svc in @('cryptSvc', 'bits', 'wuauserv')) {
     Start-Service -Name $svc -ErrorAction SilentlyContinue
 }
 
-Write-Host "Remediation sequence completed. Please schedule an orderly system reboot." -ForegroundColor Green
+Write-Output "Remediation sequence completed. Please schedule an orderly system reboot."
